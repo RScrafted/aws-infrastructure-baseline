@@ -6,179 +6,15 @@
 # -----------------------------------------------------------------------------
 # VPC: The main isolation boundary
 # -----------------------------------------------------------------------------
-resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
-  enable_dns_hostnames = true
 
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-vpc"
-    }
-  )
-}
-
-## Optional: Adopting the AWS-created Default Route Table for the VPC
-resource "aws_default_route_table" "main" {
-  default_route_table_id = aws_vpc.main.default_route_table_id
-  tags = merge(
-    var.tags,
-    { Name = "${var.project_name}-default-rt" }
-  )
-}
-
-# -----------------------------------------------------------------------------
-# SUBNETS: Segmenting the network into Public and Private tiers
-# -----------------------------------------------------------------------------
-
-## Public Subnets - Tier for Internet-facing resources (ALB)
-resource "aws_subnet" "public_a" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.20.1.0/24"
-  availability_zone = "eu-west-2a"
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-public-sn-a"
-    }
-  )
-}
-
-resource "aws_subnet" "public_b" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.20.2.0/24"
-  availability_zone = "eu-west-2b"
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-public-sn-b"
-    }
-  )
-}
-
-## Private Subnets - Tier for restricted resources (EC2/ASG)
-resource "aws_subnet" "private_a" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.20.10.0/24"
-  availability_zone = "eu-west-2a"
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-private-sn-a"
-    }
-  )
-}
-
-resource "aws_subnet" "private_b" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.20.20.0/24"
-  availability_zone = "eu-west-2b"
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-private-sn-b"
-    }
-  )
-}
-
-# -----------------------------------------------------------------------------
-# GATEWAYS: Handling ingress (IGW) and egress (NAT)
-# -----------------------------------------------------------------------------
-
-## Internet Gateway - Allows the VPC to speak to the world
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-igw"
-    }
-  )
-}
-
-## Elastic IP - Static address required for the NAT Gateway
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-nat-eip"
-    }
-  )
-}
-
-## NAT Gateway - Allows Private Subnets to reach the internet for updates
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public_a.id # Must live in Public to work
-  depends_on    = [aws_internet_gateway.igw]
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-nat"
-    }
-  )
-}
-
-# -----------------------------------------------------------------------------
-# ROUTING: Defining how traffic flows between subnets and gateways
-# -----------------------------------------------------------------------------
-
-## Public Route Table - Routes 0.0.0.0/0 to the Internet Gateway
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-public-rt"
-    }
-  )
-}
-
-## Private Route Table - Routes 0.0.0.0/0 to the NAT Gateway
-resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.main.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.nat.id
-  }
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-private-rt"
-    }
-  )
-}
-
-## Associations - Linking Route Tables to specific Subnets
-resource "aws_route_table_association" "public_a" {
-  subnet_id      = aws_subnet.public_a.id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_route_table_association" "private_a" {
-  subnet_id      = aws_subnet.private_a.id
-  route_table_id = aws_route_table.private.id
-}
-
-resource "aws_route_table_association" "public_b" {
-  subnet_id      = aws_subnet.public_b.id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_route_table_association" "private_b" {
-  subnet_id      = aws_subnet.private_b.id
-  route_table_id = aws_route_table.private.id
+# Module (instance) name can be anything. Use this same name when referencing outputs.
+# (e.g. If module "networks" then use module.network.vpc_id).
+# The name vpc is not referring to the folder (/modules/vpc) itself.
+# It is the label you give to the module instance so you can reference it later.
+module "vpc" {
+  source = "./modules/vpc"
+  project_name = var.project_name
+  tags = var.tags
 }
 
 
@@ -195,7 +31,7 @@ resource "aws_route_table_association" "private_b" {
 resource "aws_security_group" "alb_sg" {
   name        = "${var.project_name}-alb-sg"
   description = "Security group for application load balancer"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = module.vpc.vpc_id
 
   tags = merge(
     var.tags,
@@ -209,7 +45,7 @@ resource "aws_security_group" "alb_sg" {
 resource "aws_security_group" "ec2_sg" {
   name        = "${var.project_name}-ec2-sg"
   description = "Security group for private app servers"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = module.vpc.vpc_id
 
   tags = merge(
     var.tags,
@@ -300,7 +136,7 @@ resource "aws_lb" "alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+  subnets            = module.vpc.public_subnet_ids
 
   # Uncomment for Production Release
   /*
@@ -327,7 +163,7 @@ resource "aws_lb_target_group" "app_tg" {
   name     = "${var.project_name}-tg"
   port     = 80 # Protocol for communication between the Load Balancers and Targets
   protocol = "HTTP"
-  vpc_id   = aws_vpc.main.id
+  vpc_id   = module.vpc.vpc_id
 
   # Production Requirement: Define how to check if the app is alive
   health_check {
@@ -425,7 +261,7 @@ resource "aws_autoscaling_group" "app_asg" {
   max_size            = 4
   min_size            = 2
   desired_capacity    = 2
-  vpc_zone_identifier = [aws_subnet.private_a.id, aws_subnet.private_b.id] # Keep workers private!
+  vpc_zone_identifier = module.vpc.private_subnet_ids # Keep workers private!
 
   # Wait for the ALB to say the instance is "Healthy" before counting it
   health_check_type         = "ELB"

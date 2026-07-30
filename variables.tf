@@ -7,7 +7,7 @@ variable "env" {
 variable "project_name" {
   type        = string
   description = "Base project name for tagging and naming"
-  default     = "RScart-dev"
+  default     = "RScart"
 }
 
 variable "aws_region" {
@@ -19,14 +19,8 @@ variable "aws_region" {
 variable "tags" {
   type = map(string)
   default = {
-    Project      = "RScart-dev"
+    Project      = "RScart"
     Environment  = "dev"
-    Backend-Team = "q1-dev"
+    Owner = "backend-team"
   }
-}
-
-variable "vpc_cidr" {
-  type        = string
-  description = "VPC CIDR block"
-  default     = "10.20.0.0/16"
 }
