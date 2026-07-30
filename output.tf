@@ -7,19 +7,16 @@ output "alb_dns_name" {
 
 # --- 2. NETWORKING DETAILS (For Troubleshooting) ---
 
-output "vpc_id" {
-  description = "The ID of the VPC"
-  value       = aws_vpc.main.id
-}
+
 
 output "public_subnet_ids" {
   description = "List of IDs for the Public Subnets (where the ALB lives)"
-  value       = [aws_subnet.public_a.id, aws_subnet.public_b.id]
+  value       = module.vpc.public_subnet_ids # [aws_subnet.public_a.id, aws_subnet.public_b.id]
 }
 
 output "private_subnet_ids" {
   description = "List of IDs for the Private Subnets (where the EC2s live)"
-  value       = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+  value       = module.vpc.private_subnet_ids # [aws_subnet.private_a.id, aws_subnet.private_b.id]
 }
 
 # --- 3. SECURITY & SCALING ---
@@ -31,7 +28,7 @@ output "asg_name" {
 
 output "nat_gateway_public_ip" {
   description = "The Static Public IP (EIP) used by our NAT Gateway for outbound updates"
-  value       = aws_eip.nat.public_ip
+  value       = module.vpc.nat_gateway_public_ip # aws_eip.nat.public_ip
 }
 
 # --- 4. AMI ID and Name ---
