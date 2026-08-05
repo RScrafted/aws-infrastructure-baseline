@@ -23,104 +23,12 @@ module "vpc" {
 # Focus: Defining 'The Containers' and traffic policies (Rules)
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# SECURITY GROUPS: The logical firewall containers
-# -----------------------------------------------------------------------------
-
-## ALB Security Group - "The Front Door" (Public access)
-resource "aws_security_group" "alb_sg" {
-  name        = "${var.project_name}-alb-sg"
-  description = "Security group for application load balancer"
-  vpc_id      = module.vpc.vpc_id
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-alb-sg"
-    }
-  )
+module "security_groups" {
+  source = "./modules/security_groups"
+  project_name = var.project_name
+  vpc_id = module.vpc.vpc_id
+  tags = var.tags
 }
-
-## EC2 Security Group - "The Private Room" (ALB access only)
-resource "aws_security_group" "ec2_sg" {
-  name        = "${var.project_name}-ec2-sg"
-  description = "Security group for private app servers"
-  vpc_id      = module.vpc.vpc_id
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-ec2_sg"
-    }
-  )
-}
-
-# -----------------------------------------------------------------------------
-# TRAFFIC RULES: Granular Ingress/Egress policies
-# -----------------------------------------------------------------------------
-
-## ALB Rules: Standard web traffic entry
-## `aws_vpc_security_group_ingress_rule` ports depends on `aws_lb_listener` configuration.
-resource "aws_vpc_security_group_ingress_rule" "alb_http_in" {
-  security_group_id = aws_security_group.alb_sg.id
-  description       = "Allow HTTP from internet"
-  cidr_ipv4         = "0.0.0.0/0"
-  from_port         = 80
-  to_port           = 80
-  ip_protocol       = "tcp"
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-alb-http-in"
-    }
-  )
-}
-
-resource "aws_vpc_security_group_egress_rule" "alb_all_out" {
-  security_group_id = aws_security_group.alb_sg.id
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1" # -1 means 'all protocols'
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-alb-all-out"
-    }
-  )
-}
-
-## EC2 Rules: Highly restricted traffic path (The ID Badge check)
-resource "aws_vpc_security_group_ingress_rule" "ec2_http_from_alb" {
-  security_group_id            = aws_security_group.ec2_sg.id
-  description                  = "Allow HTTP traffic from ALB only"
-  referenced_security_group_id = aws_security_group.alb_sg.id # The ID Badge!
-  from_port                    = 80
-  to_port                      = 80
-  ip_protocol                  = "tcp"
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-ec2_http_from_alb"
-    }
-  )
-}
-
-resource "aws_vpc_security_group_egress_rule" "ec2_all_out" {
-  security_group_id = aws_security_group.ec2_sg.id
-  description       = "Allow all outbound (for software updates via NAT)"
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1"
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.project_name}-ec2_all_out"
-    }
-  )
-}
-
 
 # =============================================================================
 # 3. LOAD BALANCER & AUTO SCALING
@@ -135,7 +43,7 @@ resource "aws_lb" "alb" {
   name               = "${var.project_name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
+  security_groups    = [module.security_groups.alb_sg_id]
   subnets            = module.vpc.public_subnet_ids
 
   # Uncomment for Production Release
@@ -226,7 +134,7 @@ resource "aws_launch_template" "app_lt" {
   image_id      = data.aws_ami.al2023.id
   instance_type = "t2.micro"
 
-  vpc_security_group_ids = [aws_security_group.ec2_sg.id] # NSG attached
+  vpc_security_group_ids = [module.security_groups.ec2_sg_id] # NSG attached
 
   # Bootstrapping: Installing and starting the web server on launch
   user_data = base64encode(<<-EOF
