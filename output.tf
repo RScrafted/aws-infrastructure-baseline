@@ -2,7 +2,7 @@
 
 output "alb_dns_name" {
   description = "The public DNS name of the Load Balancer. Use this to visit your website!"
-  value       = "http://${aws_lb.alb.dns_name}"
+  value       = "http://${module.alb.alb_dns_name}"
 }
 
 # --- 2. NETWORKING DETAILS (For Troubleshooting) ---
@@ -26,10 +26,10 @@ output "asg_name" {
   value       = aws_autoscaling_group.app_asg.name
 }
 
-output "nat_gateway_public_ip" {
-  description = "The Static Public IP (EIP) used by our NAT Gateway for outbound updates"
-  value       = module.vpc.nat_gateway_public_ip # aws_eip.nat.public_ip
-}
+# output "nat_gateway_public_ip" {
+#   description = "The Static Public IP (EIP) used by our NAT Gateway for outbound updates"
+#   value       = module.vpc.nat_gateway_public_ip # aws_eip.nat.public_ip
+# }
 
 # --- 4. AMI ID and Name ---
 

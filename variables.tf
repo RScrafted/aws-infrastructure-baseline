@@ -19,8 +19,8 @@ variable "aws_region" {
 variable "tags" {
   type = map(string)
   default = {
-    Project      = "RScart"
-    Environment  = "dev"
-    Owner = "backend-team"
+    Project     = "RScart"
+    Environment = "dev"
+    Owner       = "backend-team"
   }
 }
