@@ -1,8 +1,3 @@
-# =============================================================================
-# 3. LOAD BALANCER & AUTO SCALING
-# Focus: High availability and traffic distribution
-# =============================================================================
-
 # -----------------------------------------------------------------------------
 # ALB: Distributing incoming web requests
 # -----------------------------------------------------------------------------
@@ -11,7 +6,7 @@ resource "aws_lb" "alb" {
   name               = "${var.project_name}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [var.alb_sg_id] # [module.security_groups.alb_sg_id]
+  security_groups    = [var.alb_sg_id]       # [module.security_groups.alb_sg_id]
   subnets            = var.public_subnet_ids # module.vpc.public_subnet_ids
 
   # Uncomment for Production Release

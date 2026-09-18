@@ -18,7 +18,7 @@ resource "aws_vpc" "main" {
 # Optional: Adopt default VPC route table to enforce clean tagging and prevent unmanaged routes
 resource "aws_default_route_table" "main" {
   default_route_table_id = aws_vpc.main.default_route_table_id
-  
+
   tags = merge(
     var.tags,
     { Name = "${var.project_name}-default-rt" }
