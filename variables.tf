@@ -1,7 +1,7 @@
 variable "env" {
   type        = string
   description = "Environment for Deployment"
-  default     = "dev"
+  default     = "admin-rachit"
 }
 
 variable "project_name" {
