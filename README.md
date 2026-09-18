@@ -69,18 +69,33 @@ A production-grade, multi-AZ AWS infrastructure provisioned with Terraform, focu
 
 ```plaintext
 .
-├── provider.tf            # Provider configuration & AWS profile mapping
-├── variables.tf           # Default variables, CIDRs, tags, and environment settings
-├── main.tf                # Core VPC, Security Groups, ALB, and ASG resources
-├── outputs.tf             # Infrastructure deployment outputs & endpoint URLs
-├── docs/
-│   └── architecture.md    # Detailed architecture reference & notes
-└── images/
-    ├── 01-terraform-outputs.png
-    ├── 02-terraform-state-list.png
-    ├── 03-asg-ec2-instance-1.png
-    └── 04-asg-ec2-instance-2.png
-
+├── README.md
+├── images
+│   ├── 01-terraform-outputs.png
+│   ├── 02-terraform-state-list.png
+│   ├── 03-asg-ec2-instance-1.png
+│   └── 04-asg-ec2-instance-2.png
+├── modules
+│   ├── vpc                             # Multi-AZ VPC, subnets, IGW, and NAT routing
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   ├── security_groups                 # ALB and EC2 security group rules
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf   
+│   ├── alb                             # Application Load Balancer, listeners, and target group
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   └── asg                             # Launch template and Auto Scaling Group fleet
+│      ├── main.tf
+│      ├── outputs.tf
+│      └── variables.tf
+├── provider.tf                         # Provider configuration & AWS profile mapping
+├── variables.tf                        # Root variables, CIDRs, tags, and environment settings
+├── main.tf                             # Root module orchestration (VPC, SG, ALB, ASG)
+└── output.tf                           # Primary endpoint outputs & DNS exports
 ```
 
 ## Prerequisites
@@ -118,7 +133,7 @@ Initialize dependencies, validate HCL syntax, and apply the infrastructure plan:
 
 ```bash
 # 1. Format code standards
-terraform fmt
+terraform fmt -recursive
 
 # 2. Initialize AWS provider & backend
 terraform init
@@ -126,10 +141,10 @@ terraform init
 # 3. Validate configuration syntax
 terraform validate
 
-# 4. Generate execution plan
+# 4. Generate and save the execution plan
 terraform plan -out=tfplan
 
-# 5. Apply changes
+# 5. Apply the exact saved plan (runs non-interactively without prompting), standard practice in CI/CD pipelines
 terraform apply "tfplan"
 ```
 

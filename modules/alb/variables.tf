@@ -1,14 +1,12 @@
-# Project name and tags are common for all modules
 variable "project_name" {
   type        = string
-  description = "Base project name for tagging and naming"
+  description = "Base prefix assigned to infrastructure resource naming conventions"
 }
 
 variable "tags" {
-  type = map(string)
+  type        = map(string)
+  description = "Standardized key-value map for resource governance and cost tracking"
 }
-
-# VPC Variables
 
 variable "vpc_id" {
   type = string
