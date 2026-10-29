@@ -2,57 +2,7 @@
 
 A production-grade, multi-AZ AWS infrastructure provisioned with Terraform, focusing on isolated private networking, automated load balancing, and high-availability Auto Scaling web fleets.
 
-```text
-                                    Internet
-                                       |
-                           [ Internet Gateway (IGW) ]
-                                       |
-    =======================================================================
-    |                              AWS VPC                                |
-    |                           10.20.0.0/16                              |
-    |   +-------------------------------------------------------------+   |
-    |   |                       PUBLIC SUBNETS                        |   |
-    |   |     Subnet A: 10.20.1.0/24  |  Subnet B: 10.20.2.0/24       |   |
-    |   |           (eu-west-2a)      |        (eu-west-2b)           |   |
-    |   |                             |                               |   |
-    |   |               +-----------------------------+               |   |
-    |   |               |  Application Load Balancer  |               |   |
-    |   |               |           Port 80           |               |   |
-    |   |               +-----------------------------+               |   |
-    |   |                              |                              |   |
-    |   |                              | (Outbound Traffic Only)      |   |
-    |   |                        +-----------+                        |   |
-    |   |                        | NAT Gate  |                        |   |
-    |   |                        +-----------+                        |   |
-    |   +------------------------------|------------------------------+   |
-    |                                  |                                  |
-    |                                  v                                  |
-    |   +-------------------------------------------------------------+   |
-    |   |                       PRIVATE SUBNETS                       |   |
-    |   |     Subnet A: 10.20.10.0/24 | Subnet B: 10.20.20.0/24       |   |
-    |   |           (eu-west-2a)      |        (eu-west-2b)           |   |
-    |   |                             |                               |   |
-    |   |                      Target Group                           |   |
-    |   |                (Health Checks Every 30s)                    |   |
-    |   |                             |                               |   |
-    |   |             +---------------+---------------+               |   |
-    |   |             |                               |               |   |
-    |   |     +---------------+               +---------------+       |   |
-    |   |     | EC2 Instance  |               | EC2 Instance  |       |   |
-    |   |     |  (AZ-A)       |               |  (AZ-B)       |       |   |
-    |   |     +---------------+               +---------------+       |   |
-    |   |             ^                               ^               |   |
-    |   |             |                               |               |   |
-    |   |             +---------------++--------------+               |   |
-    |   |                             ||                              |   |
-    |   |                    Auto Scaling Group                       |   |
-    |   |                  (Min: 2, Desired: 2, Max: 4)               |   |
-    |   |                             |                               |   |
-    |   |                      Launch Template                        |   |
-    |   |                   (Amazon Linux + Apache)                   |   |
-    |   +-------------------------------------------------------------+   |
-    =======================================================================
-```
+![AWS Infrastructure Baseline Architecture](./images/architecture.svg)
 
 ## Architectural Features
 
